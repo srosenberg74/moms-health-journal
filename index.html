@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4a4a8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Health Journal">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Mom's Health Journal</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --score-10:#1a7a1a; --score-9:#2d9e2d; --score-8:#52b852; --score-7:#85cc5a;
+  --score-6:#b8dc5a;  --score-5:#e6d44a; --score-4:#f0a830; --score-3:#e87020;
+  --score-2:#d84020;  --score-1:#c01818;
+  --bg:#f5f0eb; --card:#fff; --text:#2a2a2a; --light:#666;
+  --border:#ddd; --hdr:#4a4a8a; --hdr-t:#fff;
+  --tag-bg:#e8e8f4; --tag-bd:#b0b0d8;
+  --good:#2d9e2d; --bad:#d84020;
+}
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;font-size:16px; }
+
+/* ── header ── */
+.top { position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2); }
+.app-header { background:var(--hdr);color:var(--hdr-t);
+  padding:calc(14px + env(safe-area-inset-top)) 14px 12px;
+  display:flex;justify-content:space-between;align-items:center; }
+/* in-app reminder + info banners */
+#banners { padding:10px 14px 0; }
+.banner { background:#fff;border:2px solid var(--hdr);border-radius:12px;padding:12px 14px;
+  margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.1);font-size:0.95rem;line-height:1.45; }
+.banner.soft { border-color:var(--border);color:var(--light);font-size:0.85rem; }
+.banner .brow { display:flex;gap:8px;margin-top:10px; }
+.banner button { flex:1;border-radius:9px;padding:11px;font-size:0.95rem;font-weight:700;
+  cursor:pointer;touch-action:manipulation;border:2px solid var(--hdr);
+  background:var(--hdr);color:#fff; }
+.banner button.alt { background:#fff;color:var(--hdr); }
+.app-header h1 { font-size:1.2rem;font-weight:700; }
+.hbtns { display:flex;gap:5px; }
+.hbtn { background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:8px;
+  padding:6px 10px;font-size:0.78rem;font-weight:600;cursor:pointer;touch-action:manipulation; }
+.hbtn:active { background:rgba(255,255,255,.32); }
+
+/* ── tabs ── */
+.tabs { display:flex;background:#fff;border-bottom:2px solid var(--border); }
+.tab { flex:1;padding:11px 4px;text-align:center;font-size:0.76rem;font-weight:600;
+  color:var(--light);cursor:pointer;border-bottom:3px solid transparent;
+  margin-bottom:-2px;touch-action:manipulation; }
+.tab.active { color:var(--hdr);border-bottom-color:var(--hdr); }
+
+.view { display:none;padding:14px; }
+.view.active { display:block; }
+
+/* ── calendar ── */
+.cal-nav { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
+.cal-nav h2 { font-size:1.1rem;font-weight:700; }
+.nav-btn { background:var(--hdr);color:#fff;border:none;border-radius:8px;
+  width:38px;height:38px;font-size:1.3rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;touch-action:manipulation; }
+.nav-btn:active { opacity:.75; }
+.cal-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:3px; }
+.cal-dow { text-align:center;font-size:0.68rem;font-weight:700;color:var(--light);
+  padding:3px 0 5px;text-transform:uppercase; }
+.cal-day { aspect-ratio:1;border-radius:7px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;cursor:pointer;background:#e8e8e8;
+  border:2px solid transparent;touch-action:manipulation;min-height:38px;position:relative; }
+.cal-day.empty { background:transparent;cursor:default; }
+.cal-day.today { border-color:var(--hdr) !important; }
+.cal-day.logged { color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3); }
+.cal-day:not(.empty):active { opacity:.75; }
+.cal-day .dn { font-size:0.9rem;font-weight:700;line-height:1; }
+.cal-day .ds { font-size:0.6rem;font-weight:700;opacity:.9; }
+.cal-day .hist-dot { position:absolute;top:2px;right:2px;width:5px;height:5px;
+  background:rgba(255,255,255,.8);border-radius:50%; }
+.score-10{background:var(--score-10)!important} .score-9{background:var(--score-9)!important}
+.score-8{background:var(--score-8)!important}  .score-7{background:var(--score-7)!important}
+.score-6{background:var(--score-6)!important}
+.score-5{background:var(--score-5)!important;color:#2a2a2a!important;text-shadow:none!important}
+.score-4{background:var(--score-4)!important} .score-3{background:var(--score-3)!important}
+.score-2{background:var(--score-2)!important} .score-1{background:var(--score-1)!important}
+
+.legend { display:flex;gap:4px;flex-wrap:wrap;margin-top:12px;padding:10px;
+  background:var(--card);border-radius:10px;font-size:0.73rem; }
+.legend-item { display:flex;align-items:center;gap:4px; }
+.lswatch { width:13px;height:13px;border-radius:3px;flex-shrink:0; }
+
+.month-summary { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap; }
+.mchip { background:var(--card);border-radius:8px;padding:7px 10px;font-size:0.78rem;
+  text-align:center;flex:1;min-width:85px;box-shadow:0 1px 4px rgba(0,0,0,.08); }
+.mchip .cn { font-size:1.4rem;font-weight:800; }
+.mchip .cl { color:var(--light);font-size:0.68rem; }
+.score-bar-row { display:flex;height:7px;border-radius:4px;overflow:hidden;margin:10px 0 3px; }
+.sbs { transition:width .4s; }
+.mavg { font-size:0.8rem;color:var(--light);text-align:center;margin-top:5px; }
+
+/* ── overlays ── */
+.overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:200;align-items:flex-end; }
+.overlay.open { display:flex; }
+.modal { background:var(--card);border-radius:20px 20px 0 0;width:100%;
+  max-height:92vh;overflow-y:auto;padding:18px 16px 36px;
+  animation:slideUp .2s ease-out; }
+@keyframes slideUp { from{transform:translateY(60px);opacity:.4}to{transform:none;opacity:1} }
+.mhandle { width:38px;height:4px;background:#ccc;border-radius:2px;margin:0 auto 14px; }
+.modal h2 { font-size:1.15rem;font-weight:700;margin-bottom:14px; }
+.mlabel { font-weight:700;margin-bottom:8px;font-size:0.93rem; }
+
+/* score picker */
+.score-picker { display:flex;gap:5px;margin-bottom:18px;flex-wrap:wrap; }
+.score-btn { width:42px;height:42px;border-radius:9px;border:2px solid transparent;
+  font-size:0.95rem;font-weight:800;cursor:pointer;color:#fff;
+  touch-action:manipulation;transition:transform .1s; }
+.score-btn:active { transform:scale(.9); }
+.score-btn.sel { border-color:#2a2a2a!important;transform:scale(1.15); }
+.score-btn[data-s="5"] { color:#2a2a2a; }
+
+/* symptom pairs */
+.sym-pairs { display:flex;flex-direction:column;gap:5px;margin-bottom:18px; }
+.sym-pair-row { display:grid;grid-template-columns:1fr 1fr;gap:5px; }
+.sym-btn { padding:9px 7px;border-radius:9px;border:2px solid var(--tag-bd);
+  background:var(--tag-bg);font-size:0.8rem;font-weight:600;cursor:pointer;
+  text-align:center;touch-action:manipulation;line-height:1.3; }
+.sym-btn.good-btn { border-color:#a8d8a8; }
+.sym-btn.bad-btn  { border-color:#f0b8b8; }
+.sym-btn.sel.good-btn { background:var(--good);color:#fff;border-color:var(--good); }
+.sym-btn.sel.bad-btn  { background:var(--bad);color:#fff;border-color:var(--bad); }
+.sym-btn:active { opacity:.75; }
+
+/* notes */
+.notes-area { width:100%;border:2px solid var(--border);border-radius:9px;padding:9px;
+  font-size:0.95rem;font-family:inherit;resize:none;min-height:72px;margin-bottom:18px; }
+.notes-area:focus { outline:none;border-color:var(--hdr); }
+
+.save-btn { width:100%;background:var(--hdr);color:#fff;border:none;border-radius:11px;
+  padding:14px;font-size:1.05rem;font-weight:700;cursor:pointer;touch-action:manipulation;
+  margin-bottom:10px; }
+.save-btn:active { opacity:.8; }
+
+/* history */
+.hist-section { margin-bottom:12px; }
+.hist-toggle { width:100%;background:none;border:2px solid var(--border);border-radius:9px;
+  padding:10px;font-size:0.88rem;font-weight:600;color:var(--hdr);cursor:pointer;
+  text-align:left;touch-action:manipulation; }
+.hist-toggle:active { background:#f0f0fa; }
+.hist-list { margin-top:7px;display:flex;flex-direction:column;gap:7px; }
+.hist-item { background:#f8f6ff;border:2px solid #d0ccee;border-radius:9px;padding:11px 13px; }
+.hist-meta { font-size:0.75rem;color:var(--light);margin-bottom:5px; }
+.hist-badge { display:inline-block;padding:2px 9px;border-radius:20px;font-weight:800;
+  font-size:0.88rem;color:#fff;margin-bottom:3px; }
+.hist-badge.s5t { color:#2a2a2a; }
+.hist-tags { display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px; }
+.hist-tag { background:#e8e8f4;border:1px solid var(--tag-bd);border-radius:20px;
+  padding:1px 6px;font-size:0.65rem;font-weight:600;color:#444; }
+.hist-note { font-size:0.76rem;color:var(--light);font-style:italic; }
+.revert-btn { margin-top:7px;width:100%;background:#fff;border:2px solid var(--hdr);
+  color:var(--hdr);border-radius:7px;padding:8px;font-size:0.85rem;font-weight:700;
+  cursor:pointer;touch-action:manipulation; }
+.revert-btn:active { background:#f0f0fa; }
+
+.del-btn { width:100%;background:none;border:2px solid #d84040;color:#d84040;
+  border-radius:11px;padding:11px;font-size:0.95rem;font-weight:600;cursor:pointer;
+  touch-action:manipulation;margin-top:10px; }
+
+/* ── BP LOG ── */
+.bp-day-section { background:var(--card);border-radius:12px;padding:14px;margin-bottom:16px; }
+.bp-day-section h3 { font-size:1rem;font-weight:700;margin-bottom:12px; }
+.bp-readings { display:flex;flex-direction:column;gap:8px;margin-bottom:12px; }
+.bp-reading-row { display:flex;align-items:center;gap:8px;background:#f8f6ff;
+  border-radius:9px;padding:10px 12px; }
+.bp-nums { flex:1; }
+.bp-num-big { font-size:1.2rem;font-weight:800; }
+.bp-num-big .sep { color:var(--light);margin:0 2px; }
+.bp-time { font-size:0.72rem;color:var(--light);margin-top:1px; }
+.bp-status { display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:700;color:#fff; }
+.bp-del { background:none;border:none;color:#d84040;font-size:1.1rem;cursor:pointer;
+  padding:4px;touch-action:manipulation;flex-shrink:0; }
+.bp-entry-form { display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end; }
+.bp-input-group label { font-size:0.72rem;font-weight:700;color:var(--light);display:block;margin-bottom:3px; }
+.bp-input { width:100%;border:2px solid var(--border);border-radius:8px;padding:9px 8px;
+  font-size:1rem;font-family:inherit;text-align:center;font-weight:700; }
+.bp-input:focus { outline:none;border-color:var(--hdr); }
+.bp-add-btn { background:var(--hdr);color:#fff;border:none;border-radius:8px;padding:11px;
+  font-size:0.88rem;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap; }
+.bp-add-btn:active { opacity:.8; }
+.bp-chart-wrap { margin-top:12px; }
+.bp-chart-label { font-size:0.72rem;font-weight:700;color:var(--light);margin-bottom:4px; }
+.bp-mini-bars { display:flex;gap:4px;align-items:flex-end;height:50px;overflow-x:auto; }
+.bp-bar-group { display:flex;gap:1px;align-items:flex-end;flex-shrink:0; }
+.bp-bar { width:10px;border-radius:3px 3px 0 0;min-height:4px; }
+
+/* ── MEDS ── */
+.med-day-section { background:var(--card);border-radius:12px;padding:14px;margin-bottom:16px; }
+.med-day-section h3 { font-size:1rem;font-weight:700;margin-bottom:12px; }
+.med-check-row { display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:#f8f6ff;border-radius:9px;margin-bottom:7px;cursor:pointer;
+  touch-action:manipulation; }
+.med-check-row:active { opacity:.75; }
+.med-cb { width:28px;height:28px;border-radius:7px;border:2.5px solid var(--border);
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;flex-shrink:0;transition:all .15s; }
+.med-cb.checked { background:var(--good);border-color:var(--good);color:#fff; }
+.med-name { font-weight:700;font-size:0.95rem;flex:1; }
+.med-dose-time { font-size:0.72rem;color:var(--light); }
+.med-dose-count { font-size:0.72rem;color:var(--light);text-align:right; }
+
+/* ── MED MANAGER ── */
+.cpage-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:300;align-items:center;justify-content:center;padding:16px; }
+.cpage-overlay.open { display:flex; }
+.cpage { background:var(--card);border-radius:16px;width:100%;max-width:420px;
+  padding:22px 18px;max-height:88vh;overflow-y:auto; }
+.cpage h2 { font-size:1.1rem;font-weight:700;margin-bottom:14px; }
+.cpage-info { font-size:0.82rem;color:var(--light);margin-bottom:14px;line-height:1.5; }
+.form-group { margin-bottom:12px; }
+.form-group label { font-size:0.78rem;font-weight:700;color:var(--light);display:block;margin-bottom:4px; }
+.form-input { width:100%;border:2px solid var(--border);border-radius:8px;padding:10px;
+  font-size:0.95rem;font-family:inherit; }
+.form-input:focus { outline:none;border-color:var(--hdr); }
+.form-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.cpbtn { width:100%;border:none;border-radius:10px;padding:12px;font-size:0.95rem;
+  font-weight:700;cursor:pointer;touch-action:manipulation;margin-bottom:8px; }
+.cpbtn.primary { background:var(--hdr);color:#fff; }
+.cpbtn.secondary { background:#f0f0fa;color:var(--hdr);border:2px solid var(--hdr); }
+.cpbtn.danger { background:none;border:2px solid #d84040;color:#d84040; }
+.cpbtn:active { opacity:.8; }
+.close-cpage { width:100%;background:#eee;border:none;border-radius:9px;padding:11px;
+  font-size:0.9rem;font-weight:600;cursor:pointer;touch-action:manipulation; }
+
+.med-list-item { background:#f8f6ff;border:2px solid #d0ccee;border-radius:9px;
+  padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px; }
+.med-list-item .ml-name { font-weight:700;font-size:0.95rem;flex:1; }
+.med-list-item .ml-detail { font-size:0.72rem;color:var(--light);margin-top:1px; }
+.med-del-btn { background:none;border:none;color:#d84040;font-size:1.1rem;
+  cursor:pointer;padding:4px;touch-action:manipulation;flex-shrink:0; }
+
+/* reminder toggle */
+.rem-toggle-row { display:flex;align-items:center;gap:10px;padding:12px;
+  background:#f8f6ff;border-radius:9px;margin-bottom:10px; }
+.rem-toggle-row .rt-label { flex:1;font-weight:600;font-size:0.9rem; }
+.rem-toggle-row .rt-sub { font-size:0.72rem;color:var(--light);margin-top:1px; }
+.toggle-sw { width:46px;height:26px;border-radius:13px;background:#ccc;
+  position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;
+  touch-action:manipulation; }
+.toggle-sw.on { background:var(--hdr); }
+.toggle-sw::after { content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;
+  border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.toggle-sw.on::after { left:23px; }
+.notif-status { font-size:0.78rem;padding:8px 12px;border-radius:8px;
+  margin-bottom:10px;font-weight:600; }
+.notif-status.ok { background:#d8f0d8;color:#1a6a1a; }
+.notif-status.warn { background:#fff0d8;color:#8a5a00; }
+.notif-status.off { background:#f0e8e8;color:#8a2020; }
+
+/* log & stats */
+.stats-hdr { font-size:1.05rem;font-weight:700;margin-bottom:12px; }
+.log-entry { background:var(--card);border-radius:11px;padding:12px 14px;margin-bottom:9px;
+  display:flex;align-items:flex-start;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.07); }
+.log-badge { width:44px;height:44px;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;font-size:1.25rem;font-weight:800;color:#fff;flex-shrink:0; }
+.log-badge.s5t { color:#2a2a2a; }
+.log-date { font-weight:700;font-size:0.93rem; }
+.log-tags { display:flex;flex-wrap:wrap;gap:3px;margin-top:4px; }
+.log-tag { background:var(--tag-bg);border:1px solid var(--tag-bd);border-radius:20px;
+  padding:1px 7px;font-size:0.68rem;font-weight:600;color:#444; }
+.log-note { font-size:0.78rem;color:var(--light);margin-top:4px;font-style:italic; }
+.no-entries { text-align:center;color:var(--light);padding:36px 18px;font-size:0.93rem; }
+
+.stat-row { background:var(--card);border-radius:11px;padding:12px 14px;margin-bottom:9px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 1px 4px rgba(0,0,0,.07); }
+.stat-name { font-weight:600;font-size:0.93rem; }
+.stat-sub { font-size:0.72rem;color:var(--light);margin-top:2px; }
+.stat-count { font-size:1.7rem;font-weight:800;color:var(--hdr); }
+.period-sel { background:var(--card);border:2px solid var(--border);border-radius:9px;
+  padding:9px 12px;font-size:0.93rem;font-family:inherit;width:100%;margin-bottom:14px; }
+
+/* backup */
+.bk-textarea { width:100%;border:2px solid var(--border);border-radius:9px;
+  padding:9px;font-size:0.76rem;font-family:monospace;resize:none;height:120px;
+  margin-bottom:10px; }
+.bk-textarea:focus { outline:none;border-color:var(--hdr); }
+</style>
+</head>
+<body>
+
+<div class="top">
+<div class="app-header">
+  <h1>🌸 Health Journal</h1>
+  <div class="hbtns">
+    <button class="hbtn" onclick="openMedMgr()">💊 Meds</button>
+    <button class="hbtn" onclick="openBackup()">💾</button>
+    <button class="hbtn" onclick="shareReport()">📋 Report</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('calendar')">📅 Calendar</div>
+  <div class="tab" onclick="showTab('bp')">🩺 Blood Pressure</div>
+  <div class="tab" onclick="showTab('meds')">💊 Meds</div>
+  <div class="tab" onclick="showTab('log')">📝 Log</div>
+  <div class="tab" onclick="showTab('stats')">📊 Stats</div>
+</div>
+</div>
+<div id="banners"></div>
+
+<!-- CALENDAR -->
+<div id="view-calendar" class="view active">
+  <div class="cal-nav">
+    <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+    <h2 id="cal-month-label"></h2>
+    <button class="nav-btn" onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div id="score-bar-row" class="score-bar-row" style="margin-top:12px;"></div>
+  <div id="month-avg" class="mavg"></div>
+  <div class="month-summary" id="month-summary"></div>
+  <div class="legend" id="legend"></div>
+</div>
+
+<!-- BLOOD PRESSURE -->
+<div id="view-bp" class="view">
+  <div class="bp-day-section">
+    <h3>📅 <span id="bp-today-label"></span></h3>
+    <div class="bp-readings" id="bp-today-readings"></div>
+    <div class="bp-entry-form">
+      <div class="bp-input-group">
+        <label>Systolic (top)</label>
+        <input class="bp-input" id="bp-sys" type="number" inputmode="numeric" placeholder="120" min="60" max="250">
+      </div>
+      <div class="bp-input-group">
+        <label>Diastolic (bottom)</label>
+        <input class="bp-input" id="bp-dia" type="number" inputmode="numeric" placeholder="80" min="40" max="150">
+      </div>
+      <button class="bp-add-btn" onclick="addBP()">+ Add</button>
+    </div>
+  </div>
+
+  <div class="bp-day-section">
+    <h3>📈 Recent readings</h3>
+    <div class="bp-chart-wrap">
+      <div class="bp-chart-label">Systolic (top number) — last 14 days</div>
+      <div class="bp-mini-bars" id="bp-sys-chart"></div>
+    </div>
+    <div class="bp-chart-wrap" style="margin-top:12px;">
+      <div class="bp-chart-label">Diastolic (bottom number) — last 14 days</div>
+      <div class="bp-mini-bars" id="bp-dia-chart"></div>
+    </div>
+    <div id="bp-history-list" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- MEDS TODAY -->
+<div id="view-meds" class="view">
+  <div class="med-day-section">
+    <h3>💊 Today's medications — <span id="meds-date-label"></span></h3>
+    <div id="med-checklist"></div>
+    <div id="no-meds-msg" class="no-entries" style="display:none">
+      No medications set up yet.<br><br>
+      <button class="save-btn" style="max-width:220px;margin:0 auto;display:block" onclick="openMedMgr()">➕ Add medications</button>
+    </div>
+  </div>
+  <div class="med-day-section" id="med-history-section">
+    <h3>📅 Recent med tracking</h3>
+    <div id="med-history-list"></div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div id="view-log" class="view">
+  <div class="stats-hdr">Recent entries</div>
+  <div id="log-list"></div>
+</div>
+
+<!-- STATS -->
+<div id="view-stats" class="view">
+  <select class="period-sel" id="stats-period" onchange="renderStats()">
+    <option value="30">Last 30 days</option>
+    <option value="60">Last 60 days</option>
+    <option value="90">Last 90 days</option>
+    <option value="all">All time</option>
+  </select>
+  <div id="stats-list"></div>
+</div>
+
+<!-- FEELING LOG MODAL -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 id="modal-date-label" style="margin:0">Log this day</h2>
+      <button onclick="forceCloseModal()" style="background:none;border:none;font-size:1.5rem;color:var(--light);cursor:pointer;padding:0 4px;line-height:1;touch-action:manipulation;">✕</button>
+    </div>
+
+    <div class="mlabel">How did you feel? (1 = worst, 10 = best)</div>
+    <div class="score-picker" id="score-picker"></div>
+
+    <div class="mlabel">What was going on? (tap all that apply)</div>
+    <div class="sym-pairs" id="sym-pairs"></div>
+
+    <div class="mlabel">Notes (optional)</div>
+    <textarea class="notes-area" id="notes-input" placeholder="Anything else to remember about this day…" rows="3"></textarea>
+
+    <button class="save-btn" onclick="saveEntry()">✅ Save this day</button>
+
+    <div class="hist-section" id="hist-section" style="display:none">
+      <button class="hist-toggle" onclick="toggleHist()">
+        🕐 Previous versions of this entry <span id="hist-count"></span>
+      </button>
+      <div class="hist-list" id="hist-list" style="display:none"></div>
+    </div>
+    <button class="del-btn" id="del-btn" onclick="deleteEntry()" style="display:none">🗑 Delete this entry</button>
+  </div>
+</div>
+
+<!-- MED MANAGER / REMINDERS -->
+<div class="cpage-overlay" id="med-mgr-overlay">
+  <div class="cpage">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 style="margin:0">💊 Medications &amp; Reminders</h2>
+      <button onclick="closeMedMgr()" style="background:none;border:none;font-size:1.5rem;color:var(--light);cursor:pointer;padding:0 4px;line-height:1;touch-action:manipulation;">✕</button>
+    </div>
+
+    <div class="notif-status ok" style="font-weight:500;line-height:1.45;margin-bottom:12px;">
+      Reminders show up as a box at the top of this app when you open it. They don't buzz your phone when the app is closed — for that, set an alarm in your phone's Clock app.
+    </div>
+    <div class="rem-toggle-row" id="rem-row-score">
+      <div style="flex:1">
+        <div class="rt-label">Reminder: log daily feeling</div>
+        <div class="rt-sub">Asks you if you haven't logged by the reminder time</div>
+      </div>
+      <div class="toggle-sw" id="sw-score" onclick="toggleReminder('score')"></div>
+    </div>
+    <div class="form-row" id="score-rem-time-row" style="display:none;margin-bottom:12px;">
+      <div class="form-group" style="margin:0">
+        <label>Remind me at</label>
+        <input class="form-input" type="time" id="score-rem-time" value="20:00">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="cpbtn primary" style="margin:0" onclick="saveScoreRem()">Save</button>
+      </div>
+    </div>
+
+    <div class="rem-toggle-row">
+      <div style="flex:1">
+        <div class="rt-label">Reminder: log blood pressure</div>
+        <div class="rt-sub">Asks you if no BP reading is logged by the set time</div>
+      </div>
+      <div class="toggle-sw" id="sw-bp" onclick="toggleReminder('bp')"></div>
+    </div>
+    <div class="form-row" id="bp-rem-time-row" style="display:none;margin-bottom:12px;">
+      <div class="form-group" style="margin:0">
+        <label>Remind me at</label>
+        <input class="form-input" type="time" id="bp-rem-time" value="10:00">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="cpbtn primary" style="margin:0" onclick="saveBPRem()">Save</button>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
+    <div style="font-weight:700;margin-bottom:10px;font-size:0.95rem;">My medications</div>
+
+    <div id="med-list-display"></div>
+
+    <div style="background:#f8f6ff;border-radius:9px;padding:12px;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:0.88rem;margin-bottom:10px;color:var(--hdr)">➕ Add a medication</div>
+      <div class="form-group">
+        <label>Medication name</label>
+        <input class="form-input" id="new-med-name" placeholder="e.g. Lisinopril 10mg">
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin:0">
+          <label>Times per day</label>
+          <select class="form-input" id="new-med-freq">
+            <option value="1">Once a day</option>
+            <option value="2">Twice a day</option>
+            <option value="3">Three times</option>
+            <option value="4">Four times</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Notes (optional)</label>
+          <input class="form-input" id="new-med-notes" placeholder="e.g. with food">
+        </div>
+      </div>
+      <div id="med-times-container" style="margin-top:10px;"></div>
+      <div id="med-remind-toggle" style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="new-med-remind" style="width:18px;height:18px;">
+        <label for="new-med-remind" style="font-size:0.88rem;font-weight:600;cursor:pointer">
+          Ask me if I haven't checked it off within 1 hour
+        </label>
+      </div>
+      <button class="cpbtn primary" style="margin-top:10px" onclick="addMed()">Add medication</button>
+    </div>
+
+    <button class="close-cpage" onclick="closeMedMgr()">Done</button>
+  </div>
+</div>
+
+<!-- BACKUP -->
+<div class="cpage-overlay" id="backup-overlay">
+  <div class="cpage">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 style="margin:0">💾 Backup &amp; Restore</h2>
+      <button onclick="closeBackup()" style="background:none;border:none;font-size:1.5rem;color:var(--light);cursor:pointer;padding:0 4px;line-height:1;touch-action:manipulation;">✕</button>
+    </div>
+    <p class="cpage-info">Your entries are saved only on this phone. Make a backup copy now and then, in case the phone is lost or reset.</p>
+    <div id="backup-last" class="cpage-info" style="font-weight:700"></div>
+    <button class="cpbtn primary" onclick="doExportFile()">📤 Save a backup file (Files / email / Messages)</button>
+    <button class="cpbtn secondary" onclick="doExportCopy()">📋 Copy backup as text</button>
+    <div style="font-size:0.8rem;color:var(--light);margin:6px 0 4px">To restore: choose a backup file, or paste backup text below.</div>
+    <input type="file" id="backup-file" accept=".json,application/json,text/plain" style="margin-bottom:10px;width:100%">
+    <textarea class="bk-textarea" id="backup-text" placeholder="…or paste backup text here"></textarea>
+    <button class="cpbtn secondary" onclick="doImport()">📥 Restore from this backup</button>
+    <button class="cpbtn danger" onclick="confirmClear()">⚠️ Clear all data</button>
+    <button class="close-cpage" onclick="closeBackup()">Close</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  STORAGE
+//  data:    { [YYYY-MM-DD]: { score, symptoms[], notes, updated, history[] } }
+//  bpData:  { [YYYY-MM-DD]: [ {sys, dia, time, ts} ] }
+//  medData: { meds:[], checks:{ [YYYY-MM-DD]: {medId: [doseIndex checked?...]} } }
+//  settings: { scoreRem:{on,time}, notifGranted }
+// ═══════════════════════════════════════════════════
+let data={}, bpData={}, medData={meds:[],checks:{}}, settings={};
+function loadAll(){
+  try { data    = JSON.parse(localStorage.getItem('mhj_v3')||'{}'); } catch(e){}
+  try { bpData  = JSON.parse(localStorage.getItem('mhj_bp')||'{}'); } catch(e){}
+  try { medData = JSON.parse(localStorage.getItem('mhj_meds')||'{"meds":[],"checks":{}}'); } catch(e){}
+  try { settings= JSON.parse(localStorage.getItem('mhj_settings')||'{}'); } catch(e){}
+  migrate();
+}
+// Forward-compatible migration: fill in missing fields so old data always works
+// with new code versions. Add new migrations here as features are added.
+function migrate(){
+  // Add a new line here whenever a future version changes the saved shape, so her
+  // existing entries always load correctly in newer versions.
+  // Ensure medData has required shape
+  if(!medData.meds) medData.meds=[];
+  if(!medData.checks) medData.checks={};
+  // Ensure each med has an id (backfill if old entry lacked one)
+  medData.meds.forEach((m,i)=>{ if(!m.id) m.id='med_legacy_'+i; });
+  // Ensure each feeling entry has a history array
+  Object.keys(data).forEach(k=>{ if(!data[k].history) data[k].history=[]; });
+  // Ensure settings reminders have expected shape
+  if(settings.scoreRem&&!('on' in settings.scoreRem)) settings.scoreRem.on=false;
+  if(settings.bpRem&&!('on' in settings.bpRem)) settings.bpRem.on=false;
+}
+function saveData()     { try{localStorage.setItem('mhj_v3',JSON.stringify(data));}catch(e){} }
+function saveBP()       { try{localStorage.setItem('mhj_bp',JSON.stringify(bpData));}catch(e){} }
+function saveMeds()     { try{localStorage.setItem('mhj_meds',JSON.stringify(medData));}catch(e){} }
+function saveSettings() { try{localStorage.setItem('mhj_settings',JSON.stringify(settings));}catch(e){} }
+loadAll();
+// Escape anything she types before it is shown inside HTML
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── Symptoms ──
+const SYM_PAIRS=[
+  {cat:'Sleep'},
+  [{id:'sleep_good',label:'😴 Slept well'},{id:'sleep_bad',label:'🌙 Poor sleep'}],
+  [null,{id:'naps',label:'🛋 Needed lots of naps'}],
+  {cat:'Energy'},
+  [{id:'energy_good',label:'⚡ Good energy'},{id:'fatigue',label:'😩 Low energy / tired'}],
+  {cat:'Steadiness'},
+  [{id:'steady',label:'🚶 Steady on feet'},{id:'unsteady',label:'😵‍💫 Unsteady / dizzy'}],
+  [{id:'strong',label:'💪 Felt strong'},{id:'weak',label:'🫀 Weakness'}],
+  {cat:'Pain'},
+  [{id:'pain_low',label:'🟢 Low pain'},{id:'pain_high',label:'🔴 High pain'}],
+  {cat:'Breathing'},
+  [{id:'breathing_ok',label:'🫁 Breathing fine'},{id:'short_breath',label:'😮‍💨 Short of breath'}],
+  {cat:'Mood'},
+  [{id:'mood_good',label:'😊 Good mood'},{id:'mood_bad',label:'😔 Low mood'}],
+  {cat:'Appetite'},
+  [{id:'appetite_good',label:'🍽 Good appetite'},{id:'appetite_bad',label:'🤢 Poor appetite'}],
+  {cat:'Other'},
+  [{id:'outside',label:'☀️ Got outside'},null],
+  [{id:'social',label:'🤝 Socialized'},null],
+  [{id:'meds_ok',label:'💊 Took all meds'},null],
+];
+const ALL_SYMS=[];
+SYM_PAIRS.forEach(r=>{ if(r.cat) return; r.forEach(s=>{if(s)ALL_SYMS.push(s);}); });
+
+const SCORE_COLORS={10:'#1a7a1a',9:'#2d9e2d',8:'#52b852',7:'#85cc5a',6:'#b8dc5a',
+  5:'#e6d44a',4:'#f0a830',3:'#e87020',2:'#d84020',1:'#c01818'};
+const SCORE_LABELS={10:'Amazing',9:'Great',8:'Good',7:'Pretty good',6:'Okay',
+  5:'So-so',4:'Not great',3:'Bad',2:'Very bad',1:'Terrible'};
+
+// BP classification
+function bpClass(sys,dia){
+  if(sys>=180||dia>=120) return {label:'Crisis',   color:'#8b0000'};
+  if(sys>=140||dia>=90)  return {label:'High',     color:'#c01818'};
+  if(sys>=130||dia>=80)  return {label:'Elevated', color:'#e87020'};
+  if(sys>=120)           return {label:'Elevated', color:'#f0a830'};
+  return                        {label:'Normal',   color:'#2d9e2d'};
+}
+
+// Date helpers
+function dateKey(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function todayKey(){ const n=new Date(); return dateKey(n.getFullYear(),n.getMonth(),n.getDate()); }
+function fmtDate(key){ const [y,m,d]=key.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+
+// ═══════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════
+function showTab(name){
+  const names=['calendar','bp','meds','log','stats'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if(name==='bp')    renderBP();
+  if(name==='meds')  renderMedsToday();
+  if(name==='log')   renderLog();
+  if(name==='stats') renderStats();
+}
+
+// ═══════════════════════════════════════════════════
+//  CALENDAR
+// ═══════════════════════════════════════════════════
+let calYear,calMonth;
+(()=>{const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();})();
+
+function changeMonth(d){
+  calMonth+=d;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalendar();
+}
+
+function renderCalendar(){
+  const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent=`${MN[calMonth]} ${calYear}`;
+  const grid=document.getElementById('cal-grid'); grid.innerHTML='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
+    const el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);
+  });
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const dim=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date();
+  const isCur=today.getFullYear()===calYear&&today.getMonth()===calMonth;
+  for(let i=0;i<firstDay;i++){
+    const el=document.createElement('div');el.className='cal-day empty';grid.appendChild(el);
+  }
+  for(let d=1;d<=dim;d++){
+    const key=dateKey(calYear,calMonth,d);
+    const entry=data[key];
+    const el=document.createElement('div');
+    el.className='cal-day'+(entry?' logged score-'+entry.score:'');
+    if(isCur&&d===today.getDate()) el.classList.add('today');
+    el.innerHTML=`<span class="dn">${d}</span>`+(entry?`<span class="ds">${entry.score}/10</span>`:'');
+    if(entry?.history?.length){const dot=document.createElement('div');dot.className='hist-dot';el.appendChild(dot);}
+    el.addEventListener('click',()=>openModal(calYear,calMonth,d));
+    grid.appendChild(el);
+  }
+  renderMonthSummary(calYear,calMonth,dim);
+}
+
+function renderMonthSummary(y,m,dim){
+  const entries=[];
+  for(let d=1;d<=dim;d++){const e=data[dateKey(y,m,d)];if(e)entries.push(e);}
+  const bar=document.getElementById('score-bar-row');
+  const avg=document.getElementById('month-avg');
+  bar.innerHTML=''; avg.textContent='';
+  if(entries.length){
+    const counts={};
+    entries.forEach(e=>{counts[e.score]=(counts[e.score]||0)+1;});
+    for(let s=10;s>=1;s--){
+      if(!counts[s])continue;
+      const seg=document.createElement('div');seg.className='sbs';
+      seg.style.width=((counts[s]/entries.length)*100)+'%';
+      seg.style.background=SCORE_COLORS[s];bar.appendChild(seg);
+    }
+    const mean=(entries.reduce((a,e)=>a+e.score,0)/entries.length).toFixed(1);
+    const good=entries.filter(e=>e.score>=7).length;
+    const bad=entries.filter(e=>e.score<=4).length;
+    avg.textContent=`${entries.length} day${entries.length>1?'s':''} logged  •  avg score ${mean}  •  ${good} good, ${bad} tough`;
+  }
+  const chips=document.getElementById('month-summary'); chips.innerHTML='';
+  if(!entries.length){renderLegend();return;}
+  const sc=id=>entries.filter(e=>e.symptoms?.includes(id)).length;
+  [{n:entries.filter(e=>e.score>=7).length,label:'Good days\n(7-10)'},
+   {n:entries.filter(e=>e.score<=4).length,label:'Hard days\n(1-4)'},
+   {n:sc('sleep_good'),label:'Slept well'},
+   {n:sc('fatigue'),label:'Low energy'},
+   {n:sc('unsteady'),label:'Unsteady'},
+   {n:sc('naps'),label:'Needed naps'},
+   {n:sc('weak'),label:'Weakness'},
+   {n:sc('pain_high'),label:'High pain'},
+  ].forEach(c=>{
+    const chip=document.createElement('div');chip.className='mchip';
+    chip.innerHTML=`<div class="cn">${c.n}</div><div class="cl">${c.label.replace('\n','<br>')}</div>`;
+    chips.appendChild(chip);
+  });
+  renderLegend();
+}
+
+function renderLegend(){
+  const leg=document.getElementById('legend');
+  leg.innerHTML='<span style="font-weight:700;width:100%;margin-bottom:4px;font-size:0.76rem">Color guide: </span>';
+  [[10,'Amazing (10)'],[8,'Good (7-9)'],[5,'So-so (5-6)'],[3,'Bad (3-4)'],[1,'Terrible (1-2)']].forEach(([s,lbl])=>{
+    leg.innerHTML+=`<div class="legend-item"><div class="lswatch" style="background:${SCORE_COLORS[s]}"></div><span>${lbl}</span></div>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  FEELING LOG MODAL
+// ═══════════════════════════════════════════════════
+let modalDate=null,selectedScore=null,selectedSymptoms=new Set(),histVisible=false;
+
+function openModal(y,m,d){
+  if(new Date(y,m,d)>new Date())return;
+  modalDate=dateKey(y,m,d);
+  const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('modal-date-label').textContent=`${MN[m]} ${d}, ${y}`;
+  const ex=data[modalDate];
+  selectedScore=ex?ex.score:null;
+  selectedSymptoms=new Set(ex?ex.symptoms||[]:[]);
+  document.getElementById('notes-input').value=ex?(ex.notes||''):'';
+  histVisible=false;
+
+  const sp=document.getElementById('score-picker');sp.innerHTML='';
+  for(let s=10;s>=1;s--){
+    const btn=document.createElement('button');
+    btn.className='score-btn score-'+s+(s===selectedScore?' sel':'');
+    btn.dataset.s=s;btn.style.background=SCORE_COLORS[s];btn.textContent=s;
+    btn.onclick=()=>{selectedScore=s;sp.querySelectorAll('.score-btn').forEach(b=>b.classList.toggle('sel',+b.dataset.s===s));};
+    sp.appendChild(btn);
+  }
+
+  const container=document.getElementById('sym-pairs');container.innerHTML='';
+  SYM_PAIRS.forEach(row=>{
+    if(row.cat){
+      const hdr=document.createElement('div');
+      hdr.style.cssText='font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;'+
+        'color:var(--light);margin:7px 0 2px;display:grid;grid-template-columns:1fr 1fr;gap:5px;';
+      hdr.innerHTML=`<span style="color:var(--good)">✅ ${row.cat} — good</span><span style="color:var(--bad)">❌ ${row.cat} — hard</span>`;
+      container.appendChild(hdr);return;
+    }
+    const[good,bad]=row;
+    const pairRow=document.createElement('div');pairRow.className='sym-pair-row';
+    if(good){
+      const btn=document.createElement('div');
+      btn.className='sym-btn good-btn'+(selectedSymptoms.has(good.id)?' sel':'');
+      btn.textContent=good.label;btn.onclick=()=>toggleSym(good.id,btn);
+      pairRow.appendChild(btn);
+    } else pairRow.appendChild(document.createElement('div'));
+    if(bad){
+      const btn=document.createElement('div');
+      btn.className='sym-btn bad-btn'+(selectedSymptoms.has(bad.id)?' sel':'');
+      btn.textContent=bad.label;btn.onclick=()=>toggleSym(bad.id,btn);
+      pairRow.appendChild(btn);
+    } else pairRow.appendChild(document.createElement('div'));
+    container.appendChild(pairRow);
+  });
+
+  const hs=document.getElementById('hist-section');
+  if(ex?.history?.length){
+    hs.style.display='block';
+    document.getElementById('hist-count').textContent=`(${ex.history.length} saved)`;
+    document.getElementById('hist-list').style.display='none';
+    renderHistList(ex.history);
+  } else hs.style.display='none';
+
+  document.getElementById('del-btn').style.display=ex?'block':'none';
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function toggleSym(id,btn){
+  if(selectedSymptoms.has(id)){selectedSymptoms.delete(id);btn.classList.remove('sel');}
+  else{selectedSymptoms.add(id);btn.classList.add('sel');}
+}
+function toggleHist(){
+  histVisible=!histVisible;
+  document.getElementById('hist-list').style.display=histVisible?'flex':'none';
+}
+function renderHistList(history){
+  const list=document.getElementById('hist-list');list.innerHTML='';
+  const symMap={};ALL_SYMS.forEach(s=>{symMap[s.id]=s.label;});
+  history.forEach((h,i)=>{
+    const item=document.createElement('div');item.className='hist-item';
+    const dt=new Date(h.updated).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+    const isFive=h.score===5;
+    const tags=(h.symptoms||[]).map(id=>`<span class="hist-tag">${symMap[id]||id}</span>`).join('');
+    // Static content via innerHTML (no events)
+    item.innerHTML=`<div class="hist-meta">Saved ${dt}</div>
+      <span class="hist-badge${isFive?' s5t':''}" style="background:${SCORE_COLORS[h.score]}">${h.score}/10 — ${SCORE_LABELS[h.score]}</span>
+      ${tags?`<div class="hist-tags">${tags}</div>`:''}
+      ${h.notes?`<div class="hist-note">"${esc(h.notes)}"</div>`:''}`;
+    // Revert button via DOM property (works in sandboxed iframe)
+    const revertBtn=document.createElement('button');
+    revertBtn.className='revert-btn';revertBtn.textContent='↩ Restore this version';
+    revertBtn.onclick=()=>revertToHistory(i);
+    item.appendChild(revertBtn);
+    list.appendChild(item);
+  });
+}
+function revertToHistory(idx){
+  const ex=data[modalDate];if(!ex?.history)return;
+  const h=ex.history[idx];
+  if(!confirm(`Restore entry from ${new Date(h.updated).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}?\nCurrent entry moves to history.`))return;
+  const histWithout=ex.history.filter((_,i)=>i!==idx);
+  const snap={score:ex.score,symptoms:ex.symptoms,notes:ex.notes,updated:ex.updated};
+  data[modalDate]={score:h.score,symptoms:h.symptoms||[],notes:h.notes||'',updated:h.updated,history:[snap,...histWithout].slice(0,3)};
+  saveData();
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow='';
+  renderCalendar();
+  const p=modalDate.split('-');
+  setTimeout(()=>openModal(+p[0],+p[1]-1,+p[2]),150);
+}
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('overlay'))return;
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function forceCloseModal(){
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function saveEntry(){
+  if(!selectedScore){alert('Please choose how you felt (1–10)');return;}
+  const ex=data[modalDate];
+  let history=ex?ex.history||[]:[];
+  if(ex){
+    const snap={score:ex.score,symptoms:ex.symptoms,notes:ex.notes,updated:ex.updated};
+    history=[snap,...history].slice(0,3);
+  }
+  data[modalDate]={score:selectedScore,symptoms:[...selectedSymptoms],
+    notes:document.getElementById('notes-input').value.trim(),
+    updated:new Date().toISOString(),history};
+  saveData();
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow='';
+  renderCalendar();
+}
+function deleteEntry(){
+  if(!confirm('Delete this entry? Previous versions will also be lost.'))return;
+  delete data[modalDate];saveData();
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow='';
+  renderCalendar();
+}
+
+// ═══════════════════════════════════════════════════
+//  BLOOD PRESSURE
+// ═══════════════════════════════════════════════════
+function renderBP(){
+  const tk=todayKey();
+  const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const[y,m,d]=tk.split('-');
+  document.getElementById('bp-today-label').textContent=`${MN[+m-1]} ${+d}, ${y}`;
+  renderBPReadings(tk);
+  renderBPCharts();
+  renderBPHistory();
+}
+
+function renderBPReadings(key){
+  const container=document.getElementById('bp-today-readings');
+  container.innerHTML='';
+  const readings=bpData[key]||[];
+  if(!readings.length){
+    container.innerHTML='<div style="color:var(--light);font-size:0.85rem;padding:8px 0">No readings logged today yet.</div>';
+    return;
+  }
+  readings.forEach((r,i)=>{
+    const cls=bpClass(r.sys,r.dia);
+    const row=document.createElement('div');row.className='bp-reading-row';
+    // Build nums section via innerHTML (no events here, safe)
+    const nums=document.createElement('div');nums.className='bp-nums';
+    nums.innerHTML=`<div class="bp-num-big">${r.sys}<span class="sep">/</span>${r.dia} <span style="font-size:0.8rem;font-weight:500;color:var(--light)">mmHg</span></div>
+      <div class="bp-time">${r.time||''} <span class="bp-status" style="background:${cls.color}">${cls.label}</span></div>`;
+    // Delete button via DOM property (works in sandboxed iframe)
+    const delBtn=document.createElement('button');
+    delBtn.className='bp-del';delBtn.title='Delete';delBtn.textContent='✕';
+    delBtn.onclick=()=>deleteBP(key,i);
+    row.appendChild(nums);
+    row.appendChild(delBtn);
+    container.appendChild(row);
+  });
+}
+
+function addBP(){
+  const sys=parseInt(document.getElementById('bp-sys').value);
+  const dia=parseInt(document.getElementById('bp-dia').value);
+  if(!sys||!dia||sys<60||sys>250||dia<40||dia>150){
+    alert('Please enter valid blood pressure numbers.\nTop number: 60–250\nBottom number: 40–150');return;
+  }
+  const tk=todayKey();
+  if(!bpData[tk]) bpData[tk]=[];
+  const now=new Date();
+  bpData[tk].push({sys,dia,time:now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),ts:now.toISOString()});
+  saveBP();
+  document.getElementById('bp-sys').value='';
+  document.getElementById('bp-dia').value='';
+  renderBPReadings(tk);
+  renderBPCharts();
+  renderBPHistory();
+}
+
+function deleteBP(key,idx){
+  if(!confirm('Remove this reading?'))return;
+  bpData[key].splice(idx,1);
+  if(!bpData[key].length) delete bpData[key];
+  saveBP();renderBP();
+}
+
+function renderBPCharts(){
+  const days=14;
+  const now=new Date();
+  const labels=[],sysList=[],diaList=[];
+  for(let i=days-1;i>=0;i--){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const key=dateKey(d.getFullYear(),d.getMonth(),d.getDate());
+    const readings=bpData[key]||[];
+    labels.push(d.getDate());
+    if(readings.length){
+      const avgSys=Math.round(readings.reduce((a,r)=>a+r.sys,0)/readings.length);
+      const avgDia=Math.round(readings.reduce((a,r)=>a+r.dia,0)/readings.length);
+      sysList.push(avgSys);diaList.push(avgDia);
+    } else { sysList.push(null);diaList.push(null); }
+  }
+  renderMiniBarChart('bp-sys-chart',labels,sysList,80,200,s=>bpClass(s,70).color);
+  renderMiniBarChart('bp-dia-chart',labels,diaList,50,130,(_,d)=>bpClass(120,d).color);
+}
+
+function renderMiniBarChart(id,labels,values,minV,maxV,colorFn){
+  const container=document.getElementById(id);container.innerHTML='';
+  const range=maxV-minV;
+  labels.forEach((lbl,i)=>{
+    const val=values[i];
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;width:18px;';
+    if(val!==null){
+      const h=Math.max(4,Math.round(((val-minV)/range)*46));
+      const bar=document.createElement('div');bar.className='bp-bar';
+      bar.style.height=h+'px';bar.style.background=colorFn(val,val);
+      wrap.appendChild(bar);
+    } else {
+      const bar=document.createElement('div');bar.className='bp-bar';
+      bar.style.height='4px';bar.style.background='#ddd';
+      wrap.appendChild(bar);
+    }
+    const lblEl=document.createElement('div');lblEl.style.cssText='font-size:0.6rem;color:var(--light);';
+    lblEl.textContent=lbl;wrap.appendChild(lblEl);
+    container.appendChild(wrap);
+  });
+}
+
+function renderBPHistory(){
+  const container=document.getElementById('bp-history-list');container.innerHTML='';
+  const keys=Object.keys(bpData).sort().reverse().slice(0,10);
+  if(!keys.length){container.innerHTML='<div style="color:var(--light);font-size:0.83rem">No readings yet.</div>';return;}
+  keys.forEach(key=>{
+    const readings=bpData[key];
+    const hdr=document.createElement('div');
+    hdr.style.cssText='font-weight:700;font-size:0.85rem;margin-bottom:5px;margin-top:12px;color:var(--hdr);';
+    hdr.textContent=fmtDate(key);container.appendChild(hdr);
+    readings.forEach(r=>{
+      const cls=bpClass(r.sys,r.dia);
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f8f6ff;border-radius:7px;margin-bottom:4px;';
+      row.innerHTML=`<span style="font-weight:800;font-size:0.95rem">${r.sys}/${r.dia}</span>
+        <span style="font-size:0.72rem;color:var(--light)">${r.time||''}</span>
+        <span class="bp-status" style="background:${cls.color}">${cls.label}</span>`;
+      container.appendChild(row);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  MEDICATIONS
+// ═══════════════════════════════════════════════════
+function renderMedsToday(){
+  const tk=todayKey();
+  const[y,m,d]=tk.split('-');
+  const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('meds-date-label').textContent=`${MN[+m-1]} ${+d}`;
+  const cl=document.getElementById('med-checklist');
+  const nm=document.getElementById('no-meds-msg');
+  cl.innerHTML='';
+  if(!medData.meds.length){cl.style.display='none';nm.style.display='block';return;}
+  cl.style.display='block';nm.style.display='none';
+  if(!medData.checks[tk]) medData.checks[tk]={};
+  medData.meds.forEach(med=>{
+    const doses=parseInt(med.freq)||1;
+    const checked=medData.checks[tk][med.id]||[];
+    const hdr=document.createElement('div');
+    hdr.style.cssText='font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--light);margin:10px 0 5px;';
+    hdr.textContent=med.name+(med.notes?` — ${med.notes}`:'');
+    cl.appendChild(hdr);
+    const times=med.times||[];
+    for(let i=0;i<doses;i++){
+      const isChecked=checked.includes(i);
+      const row=document.createElement('div');row.className='med-check-row';
+      const timeLabel=times[i]?` at ${fmtTime(times[i])}`:'';
+      row.innerHTML=`<div class="med-cb${isChecked?' checked':''}">${isChecked?'✓':''}</div>
+        <div style="flex:1"><div class="med-name">Dose ${doses>1?i+1+' of '+doses:''}</div>
+        <div class="med-dose-time">${timeLabel||'No specific time set'}</div></div>
+        <div class="med-dose-count">${isChecked?'✅ Taken':'Not yet'}</div>`;
+      row.onclick=()=>toggleMedCheck(tk,med.id,i);
+      cl.appendChild(row);
+    }
+  });
+  renderMedHistory();
+}
+
+function toggleMedCheck(dateKey,medId,doseIdx){
+  if(!medData.checks[dateKey]) medData.checks[dateKey]={};
+  const arr=medData.checks[dateKey][medId]||[];
+  const idx=arr.indexOf(doseIdx);
+  if(idx>=0) arr.splice(idx,1); else arr.push(doseIdx);
+  medData.checks[dateKey][medId]=arr;
+  saveMeds();
+  renderMedsToday();
+}
+
+function renderMedHistory(){
+  const container=document.getElementById('med-history-list');container.innerHTML='';
+  const today=todayKey();
+  const keys=Object.keys(medData.checks).filter(k=>k!==today).sort().reverse().slice(0,7);
+  if(!keys.length){
+    container.innerHTML='<div style="color:var(--light);font-size:0.82rem">No previous tracking data yet.</div>';
+    return;
+  }
+  keys.forEach(key=>{
+    const checks=medData.checks[key];
+    const totalDoses=medData.meds.reduce((a,m)=>a+(parseInt(m.freq)||1),0);
+    const taken=Object.values(checks).reduce((a,v)=>a+v.length,0);
+    const hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:8px 12px;'+
+      'background:#f8f6ff;border-radius:9px;margin-bottom:5px;';
+    const pct=totalDoses>0?Math.round(taken/totalDoses*100):0;
+    const col=pct===100?'var(--good)':pct>=50?'#f0a830':'var(--bad)';
+    hdr.innerHTML=`<span style="font-weight:700;font-size:0.88rem">${fmtDate(key)}</span>
+      <span style="font-weight:800;color:${col}">${taken}/${totalDoses} taken (${pct}%)</span>`;
+    container.appendChild(hdr);
+  });
+}
+
+function fmtTime(t){
+  if(!t)return'';
+  const[h,m]=t.split(':');
+  const hh=parseInt(h);
+  return `${hh>12?hh-12:hh||12}:${m} ${hh>=12?'PM':'AM'}`;
+}
+
+// ═══════════════════════════════════════════════════
+//  MED MANAGER
+// ═══════════════════════════════════════════════════
+function openMedMgr(){
+  refreshMedTimesUI();
+  renderMedListDisplay();
+  updateNotifStatus();
+  updateToggleUI('score',settings.scoreRem?.on);
+  document.getElementById('score-rem-time-row').style.display=settings.scoreRem?.on?'grid':'none';
+  if(settings.scoreRem?.time) document.getElementById('score-rem-time').value=settings.scoreRem.time;
+  updateToggleUI('bp',settings.bpRem?.on);
+  document.getElementById('bp-rem-time-row').style.display=settings.bpRem?.on?'grid':'none';
+  if(settings.bpRem?.time) document.getElementById('bp-rem-time').value=settings.bpRem.time;
+  document.getElementById('med-mgr-overlay').classList.add('open');
+}
+function closeMedMgr(){
+  document.getElementById('med-mgr-overlay').classList.remove('open');
+  if(document.getElementById('view-meds').classList.contains('active')) renderMedsToday();
+}
+
+function renderMedListDisplay(){
+  const container=document.getElementById('med-list-display');container.innerHTML='';
+  if(!medData.meds.length){
+    container.innerHTML='<div style="color:var(--light);font-size:0.82rem;margin-bottom:10px">No medications added yet.</div>';
+    return;
+  }
+  medData.meds.forEach((med,i)=>{
+    const item=document.createElement('div');item.className='med-list-item';
+    const times=med.times||[];
+    const timeStr=times.filter(Boolean).map(fmtTime).join(', ')||'No specific times';
+    // Build text content via innerHTML (no events), delete button via DOM property
+    const info=document.createElement('div');info.style.flex='1';
+    info.innerHTML=`<div class="ml-name">${esc(med.name)}</div>
+      <div class="ml-detail">${med.freq}x/day • ${timeStr}${med.notes?' • '+esc(med.notes):''}${med.remind?' • 🔔 Reminders on':''}</div>`;
+    const delBtn=document.createElement('button');
+    delBtn.className='med-del-btn';delBtn.textContent='✕';
+    delBtn.onclick=()=>deleteMed(i);
+    item.appendChild(info);
+    item.appendChild(delBtn);
+    container.appendChild(item);
+  });
+}
+
+document.getElementById('new-med-freq').addEventListener('change',refreshMedTimesUI);
+function refreshMedTimesUI(){
+  const freq=parseInt(document.getElementById('new-med-freq').value)||1;
+  const container=document.getElementById('med-times-container');container.innerHTML='';
+  const defaults=['08:00','12:00','18:00','22:00'];
+  for(let i=0;i<freq;i++){
+    const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px;';
+    row.innerHTML=`<label style="font-size:0.78rem;font-weight:700;color:var(--light);min-width:70px;">Dose ${i+1} time:</label>
+      <input type="time" class="form-input med-time-input" value="${defaults[i]||''}" style="flex:1">`;
+    container.appendChild(row);
+  }
+}
+
+function addMed(){
+  const name=document.getElementById('new-med-name').value.trim();
+  if(!name){alert('Please enter the medication name.');return;}
+  const freq=parseInt(document.getElementById('new-med-freq').value)||1;
+  const timeInputs=document.querySelectorAll('.med-time-input');
+  const times=Array.from(timeInputs).map(t=>t.value);
+  const notes=document.getElementById('new-med-notes').value.trim();
+  const remind=document.getElementById('new-med-remind').checked;
+  const med={id:'med_'+Date.now(),name,freq,times,notes,remind};
+  medData.meds.push(med);saveMeds();
+  document.getElementById('new-med-name').value='';
+  document.getElementById('new-med-notes').value='';
+  document.getElementById('new-med-remind').checked=false;
+  document.getElementById('new-med-freq').value='1';
+  refreshMedTimesUI();
+  renderMedListDisplay();
+  if(remind) requestNotifPermission();
+  scheduleReminders();
+}
+
+function deleteMed(i){
+  if(!confirm(`Remove ${medData.meds[i].name}?`))return;
+  medData.meds.splice(i,1);saveMeds();
+  renderMedListDisplay();
+  scheduleReminders();
+}
+
+// ═══════════════════════════════════════════════════
+//  REMINDERS (in-app)
+// ═══════════════════════════════════════════════════
+// Reminders are shown INSIDE the app (a box at the top) whenever it is open or comes
+// back to the front. iPhones don't let a web app buzz in the background without a server,
+// so for a real "buzz" she can use the phone's own Clock/Reminders app.
+function updateNotifStatus(){}              // kept so older call sites keep working
+function requestNotifPermission(){ return Promise.resolve(true); }
+
+function toggleReminder(type){
+  const remKey={score:'scoreRem',bp:'bpRem'}[type];
+  const rowId={score:'score-rem-time-row',bp:'bp-rem-time-row'}[type];
+  const def={score:'20:00',bp:'10:00'}[type];
+  if(!remKey)return;
+  const on=!settings[remKey]?.on;
+  settings[remKey]={...(settings[remKey]||{}),on,time:settings[remKey]?.time||def};
+  saveSettings();updateToggleUI(type,on);
+  document.getElementById(rowId).style.display=on?'grid':'none';
+  checkReminders();
+}
+function updateToggleUI(type,on){
+  const sw=document.getElementById('sw-'+type);
+  if(sw) sw.classList.toggle('on',!!on);
+}
+function saveScoreRem(){
+  const t=document.getElementById('score-rem-time').value;
+  settings.scoreRem={...(settings.scoreRem||{}),time:t};
+  saveSettings();checkReminders();
+  alert(`Daily feeling reminder set for ${fmtTime(t)} ✅`);
+}
+function saveBPRem(){
+  const t=document.getElementById('bp-rem-time').value;
+  settings.bpRem={...(settings.bpRem||{}),time:t};
+  saveSettings();checkReminders();
+  alert(`Blood pressure reminder set for ${fmtTime(t)} ✅`);
+}
+
+// "Not now" hides a reminder for a while (kept in memory only)
+const snoozeUntil={};
+function snooze(key,minutes){ snoozeUntil[key]=Date.now()+minutes*60000; checkReminders(); }
+function isSnoozed(key){ return (snoozeUntil[key]||0)>Date.now(); }
+
+function minutesOf(hhmm){ const[h,m]=hhmm.split(':'); return (+h)*60+(+m); }
+
+function checkReminders(){
+  const box=document.getElementById('rem-banners');
+  if(!box) return;
+  box.innerHTML='';
+  const now=new Date(), nowMin=now.getHours()*60+now.getMinutes(), tk=todayKey();
+  const items=[];
+
+  // 1) Medications: 1 hour after the scheduled time, if not checked off
+  medData.meds.forEach(med=>{
+    if(!med.remind) return;
+    (med.times||[]).forEach((t,i)=>{
+      if(!t||i>=(parseInt(med.freq)||1)) return;
+      const taken=(medData.checks[tk]?.[med.id]||[]).includes(i);
+      const key=`med|${med.id}|${i}`;
+      if(taken||isSnoozed(key)||nowMin<minutesOf(t)+60) return;
+      items.push({
+        text:`💊 Did you take <strong>${esc(med.name)}</strong>?<br><span style="color:var(--light);font-size:0.85rem">It was due at ${fmtTime(t)}</span>`,
+        yes:'✅ Yes, I took it', yesFn:()=>markDose(med.id,i),
+        no:'Not yet', noFn:()=>snooze(key,30)
+      });
+    });
+  });
+  // 2) Daily feeling
+  if(settings.scoreRem?.on&&settings.scoreRem.time&&!data[tk]&&!isSnoozed('score')&&nowMin>=minutesOf(settings.scoreRem.time)){
+    items.push({text:'📝 You haven\'t logged how you felt today.',
+      yes:'Log it now', yesFn:()=>{const n=new Date();openModal(n.getFullYear(),n.getMonth(),n.getDate());},
+      no:'Not now', noFn:()=>snooze('score',60)});
+  }
+  // 3) Blood pressure
+  if(settings.bpRem?.on&&settings.bpRem.time&&!(bpData[tk]?.length)&&!isSnoozed('bp')&&nowMin>=minutesOf(settings.bpRem.time)){
+    items.push({text:'🩺 No blood pressure reading logged today yet.',
+      yes:'Log it now', yesFn:()=>showTab('bp'),
+      no:'Not now', noFn:()=>snooze('bp',60)});
+  }
+
+  items.slice(0,5).forEach(it=>{
+    const b=document.createElement('div');b.className='banner';
+    const msg=document.createElement('div');msg.innerHTML=it.text;
+    const row=document.createElement('div');row.className='brow';
+    const y=document.createElement('button');y.textContent=it.yes;y.onclick=it.yesFn;
+    const n=document.createElement('button');n.className='alt';n.textContent=it.no;n.onclick=it.noFn;
+    row.appendChild(y);row.appendChild(n);b.appendChild(msg);b.appendChild(row);box.appendChild(b);
+  });
+}
+function scheduleReminders(){ checkReminders(); }   // older name still used by addMed/deleteMed
+
+function markDose(medId,i){
+  const tk=todayKey();
+  if(!medData.checks[tk]) medData.checks[tk]={};
+  const arr=medData.checks[tk][medId]||[];
+  if(!arr.includes(i)) arr.push(i);
+  medData.checks[tk][medId]=arr;
+  saveMeds();
+  if(document.getElementById('view-meds').classList.contains('active')) renderMedsToday();
+  checkReminders();
+}
+
+// ═══════════════════════════════════════════════════
+//  LOG VIEW
+// ═══════════════════════════════════════════════════
+function renderLog(){
+  const list=document.getElementById('log-list');
+  const keys=Object.keys(data).sort().reverse();
+  if(!keys.length){list.innerHTML='<div class="no-entries">No entries yet. Tap a day on the calendar to get started!</div>';return;}
+  list.innerHTML='';
+  const symMap={};ALL_SYMS.forEach(s=>{symMap[s.id]=s.label;});
+  keys.forEach(key=>{
+    const e=data[key];
+    const[y,m,d]=key.split('-');
+    const dateStr=new Date(+y,+m-1,+d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    const tags=(e.symptoms||[]).map(id=>`<span class="log-tag">${symMap[id]||id}</span>`).join('');
+    const isFive=e.score===5;
+    const histBadge=e.history?.length?`<span style="font-size:0.68rem;color:var(--light);margin-left:4px">🕐 ${e.history.length}</span>`:'';
+    const el=document.createElement('div');el.className='log-entry';
+    el.innerHTML=`<div class="log-badge${isFive?' s5t':''}" style="background:${SCORE_COLORS[e.score]}">${e.score}</div>
+      <div style="flex:1"><div class="log-date">${dateStr}${histBadge}</div>
+      <div style="font-size:0.76rem;color:var(--light)">${SCORE_LABELS[e.score]}</div>
+      ${tags?`<div class="log-tags">${tags}</div>`:''}
+      ${e.notes?`<div class="log-note">"${esc(e.notes)}"</div>`:''}</div>`;
+    el.onclick=()=>{const p=key.split('-');openModal(+p[0],+p[1]-1,+p[2]);};
+    list.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  STATS VIEW
+// ═══════════════════════════════════════════════════
+function renderStats(){
+  const period=document.getElementById('stats-period').value;
+  const now=new Date();
+  let cutoff=null;
+  if(period!=='all'){cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-parseInt(period));}
+  const entries=Object.entries(data)
+    .filter(([key])=>{if(!cutoff)return true;const[y,m,d]=key.split('-');return new Date(+y,+m-1,+d)>=cutoff;})
+    .map(([,e])=>e);
+  const list=document.getElementById('stats-list');list.innerHTML='';
+  if(!entries.length){list.innerHTML='<div class="no-entries">No entries in this period yet.</div>';return;}
+  const n=entries.length;
+  const sc=id=>entries.filter(e=>e.symptoms?.includes(id)).length;
+  const avg=(entries.reduce((a,e)=>a+e.score,0)/n).toFixed(1);
+  addStatRow(list,'📋 Total days logged',`${n} days`,avg,10,'Average score '+avg+'/10');
+  addStatRow(list,'😊 Good days (7-10)',entries.filter(e=>e.score>=7).length+' days',entries.filter(e=>e.score>=7).length,n,pct(entries.filter(e=>e.score>=7).length,n)+' of logged days');
+  addStatRow(list,'😔 Hard days (1-4)',entries.filter(e=>e.score<=4).length+' days',entries.filter(e=>e.score<=4).length,n,pct(entries.filter(e=>e.score<=4).length,n)+' of logged days');
+  [{label:'— Sleep',items:[{id:'sleep_good',label:'Slept well'},{id:'sleep_bad',label:'Poor sleep'},{id:'naps',label:'Needed lots of naps'}]},
+   {label:'— Energy',items:[{id:'energy_good',label:'Good energy'},{id:'fatigue',label:'Low energy / tired'}]},
+   {label:'— Mobility',items:[{id:'steady',label:'Steady on feet'},{id:'unsteady',label:'Unsteady / dizzy'},{id:'strong',label:'Felt strong'},{id:'weak',label:'Weakness'}]},
+   {label:'— Pain',items:[{id:'pain_low',label:'Low pain'},{id:'pain_high',label:'High pain'}]},
+   {label:'— Breathing',items:[{id:'breathing_ok',label:'Breathing fine'},{id:'short_breath',label:'Short of breath'}]},
+   {label:'— Mood & Appetite',items:[{id:'mood_good',label:'Good mood'},{id:'mood_bad',label:'Low mood'},{id:'appetite_good',label:'Good appetite'},{id:'appetite_bad',label:'Poor appetite'}]},
+   {label:'— Lifestyle',items:[{id:'outside',label:'Got outside'},{id:'social',label:'Socialized'},{id:'meds_ok',label:'Took all meds'}]},
+  ].forEach(g=>{
+    const hdr=document.createElement('div');
+    hdr.style.cssText='font-weight:800;font-size:0.82rem;color:var(--light);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.04em';
+    hdr.textContent=g.label;list.appendChild(hdr);
+    g.items.forEach(item=>addStatRow(list,item.label,sc(item.id)+' days',sc(item.id),n,pct(sc(item.id),n)+' of logged days'));
+  });
+}
+function addStatRow(container,name,countStr,count,max,sub){
+  const row=document.createElement('div');row.className='stat-row';
+  const pctW=max>0?Math.round((count/max)*100):0;
+  row.innerHTML=`<div style="flex:1"><div class="stat-name">${name}</div><div class="stat-sub">${sub}</div>
+    <div style="background:#eee;border-radius:4px;height:5px;margin-top:5px;overflow:hidden">
+      <div style="width:${pctW}%;height:100%;background:var(--hdr);border-radius:4px;"></div>
+    </div></div>
+    <div style="text-align:right;margin-left:12px"><div class="stat-count">${count}</div></div>`;
+  container.appendChild(row);
+}
+function pct(a,b){return b?Math.round(a/b*100)+'%':'0%';}
+
+// ═══════════════════════════════════════════════════
+//  REPORT
+// ═══════════════════════════════════════════════════
+function shareReport(){
+  const now=new Date();
+  const cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-30);
+  const inRange=key=>{const[y,m,d]=key.split('-');return new Date(+y,+m-1,+d)>=cutoff;};
+  const fe=Object.entries(data).filter(([k])=>inRange(k)).map(([,e])=>e);
+  const bpDays=Object.entries(bpData).filter(([k])=>inRange(k));
+  if(!fe.length&&!bpDays.length){alert('No entries in the last 30 days yet.');return;}
+
+  const n=fe.length;
+  const sc=id=>fe.filter(e=>e.symptoms?.includes(id)).length;
+  const L=[];
+  L.push('Health Journal - Last 30 Days');
+  L.push('Created: '+now.toLocaleDateString());
+  L.push('');
+  L.push('=== HOW I FELT ===');
+  L.push('Days logged: '+n);
+  if(n){
+    L.push('Average feeling score: '+(fe.reduce((a,e)=>a+e.score,0)/n).toFixed(1)+'/10');
+    L.push('Good days (7-10): '+fe.filter(e=>e.score>=7).length);
+    L.push('Hard days (1-4): '+fe.filter(e=>e.score<=4).length);
+    L.push('');
+    L.push('Days with each (out of '+n+' logged):');
+    [['sleep_good','Slept well'],['sleep_bad','Poor sleep'],['naps','Needed lots of naps'],
+     ['energy_good','Good energy'],['fatigue','Low energy / tired'],['steady','Steady on feet'],
+     ['unsteady','Unsteady / dizzy'],['strong','Felt strong'],['weak','Weakness'],
+     ['pain_low','Low pain'],['pain_high','High pain'],['breathing_ok','Breathing fine'],
+     ['short_breath','Short of breath'],['mood_good','Good mood'],['mood_bad','Low mood'],
+     ['appetite_good','Good appetite'],['appetite_bad','Poor appetite']
+    ].forEach(([id,label])=>L.push('  '+label+': '+sc(id)));
+  }
+  L.push('');
+  L.push('=== BLOOD PRESSURE ===');
+  const all=bpDays.flatMap(([,r])=>r);
+  if(all.length){
+    const aS=Math.round(all.reduce((a,r)=>a+r.sys,0)/all.length);
+    const aD=Math.round(all.reduce((a,r)=>a+r.dia,0)/all.length);
+    L.push(`Readings: ${all.length} over ${bpDays.length} days`);
+    L.push(`Average: ${aS}/${aD} (${bpClass(aS,aD).label})`);
+    L.push(`Highest: ${Math.max(...all.map(r=>r.sys))}/${Math.max(...all.map(r=>r.dia))}   Lowest: ${Math.min(...all.map(r=>r.sys))}/${Math.min(...all.map(r=>r.dia))}`);
+  } else L.push('No readings logged');
+  L.push('');
+  L.push('=== MEDICATIONS ===');
+  if(medData.meds.length){
+    medData.meds.forEach(m=>L.push(`  ${m.name} - ${m.freq}x/day`+(m.notes?` (${m.notes})`:'')));
+    const doseDays=Object.keys(medData.checks).filter(inRange);
+    const per=medData.meds.reduce((a,m)=>a+(parseInt(m.freq)||1),0);
+    if(doseDays.length&&per){
+      const taken=doseDays.reduce((a,k)=>a+Object.values(medData.checks[k]).reduce((x,v)=>x+v.length,0),0);
+      L.push(`Doses checked off: ${taken} of ${per*doseDays.length} on the ${doseDays.length} days tracked`);
+    }
+  } else L.push('No medications set up');
+
+  // Notes from days with notes (doctor may care)
+  const noted=Object.entries(data).filter(([k,e])=>inRange(k)&&e.notes).sort();
+  if(noted.length){
+    L.push('');L.push('=== MY NOTES ===');
+    noted.forEach(([k,e])=>L.push(`${fmtDate(k)} (${e.score}/10): ${e.notes}`));
+  }
+  showReport(L.join('\n'));
+}
+
+function showReport(text){
+  const existing=document.getElementById('report-overlay');
+  if(existing) existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='report-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:flex;align-items:flex-end;';
+  const modal=document.createElement('div');
+  modal.style.cssText='background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:18px 16px calc(30px + env(safe-area-inset-bottom));animation:slideUp .2s ease-out;';
+
+  const hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;';
+  hdr.innerHTML='<h2 style="margin:0;font-size:1.1rem;font-weight:700">📋 Doctor Report</h2>';
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='✕';
+  closeBtn.style.cssText='background:none;border:none;font-size:1.5rem;color:#666;cursor:pointer;padding:0 4px;line-height:1;';
+  closeBtn.onclick=()=>overlay.remove();
+  hdr.appendChild(closeBtn);
+
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.readOnly=true;
+  ta.style.cssText='width:100%;border:2px solid #ddd;border-radius:9px;padding:10px;font-size:0.8rem;font-family:monospace;resize:none;height:280px;margin-bottom:12px;';
+
+  const mkBtn=(label,primary)=>{
+    const b=document.createElement('button');b.textContent=label;
+    b.style.cssText='width:100%;border-radius:11px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:8px;'+
+      (primary?'background:#4a4a8a;color:#fff;border:none;':'background:#fff;color:#4a4a8a;border:2px solid #4a4a8a;');
+    return b;
+  };
+  const flash=(b,orig)=>{b.textContent='✅ Done!';setTimeout(()=>b.textContent=orig,2000);};
+
+  const copyBtn=mkBtn('📋 Copy report',true);
+  copyBtn.onclick=()=>{
+    ta.select();ta.setSelectionRange(0,999999);
+    const ok=()=>flash(copyBtn,'📋 Copy report');
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(ok).catch(()=>{try{document.execCommand('copy');ok();}catch(e){}});
+    } else { try{document.execCommand('copy');ok();}catch(e){} }
+  };
+  modal.appendChild(hdr);modal.appendChild(ta);modal.appendChild(copyBtn);
+
+  if(navigator.share){
+    const shBtn=mkBtn('📤 Share (Messages, Mail…)',false);
+    shBtn.onclick=()=>{navigator.share({title:'Health Journal report',text}).catch(()=>{});};
+    modal.appendChild(shBtn);
+  }
+  overlay.appendChild(modal);
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// ═══════════════════════════════════════════════════
+//  BACKUP
+// ═══════════════════════════════════════════════════
+function openBackup(){
+  document.getElementById('backup-text').value='';
+  const f=document.getElementById('backup-file'); if(f) f.value='';
+  const last=settings.lastBackup;
+  document.getElementById('backup-last').textContent=last
+    ? 'Last backup: '+new Date(last).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    : 'You haven\'t made a backup yet.';
+  document.getElementById('backup-overlay').classList.add('open');
+}
+function closeBackup(){document.getElementById('backup-overlay').classList.remove('open');}
+
+function backupJSON(){
+  return JSON.stringify({app:'moms-health-journal',version:3,exported:new Date().toISOString(),
+    feelings:data,bp:bpData,meds:medData,settings},null,2);
+}
+function markBackedUp(){
+  settings.lastBackup=new Date().toISOString();
+  delete settings.backupSnooze;
+  saveSettings();
+  document.getElementById('backup-last').textContent='Last backup: today';
+  renderInfoBanners();
+}
+async function doExportFile(){
+  const json=backupJSON();
+  document.getElementById('backup-text').value=json;
+  const name='health-journal-backup-'+todayKey()+'.json';
+  try{
+    const file=new File([json],name,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Health Journal backup'});
+      markBackedUp();return;
+    }
+  }catch(e){ if(e&&e.name==='AbortError') return; }   // she closed the share sheet
+  // Fallback: ordinary download
+  const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  markBackedUp();
+}
+function doExportCopy(){
+  const json=backupJSON();
+  const ta=document.getElementById('backup-text');ta.value=json;
+  const done=()=>{markBackedUp();alert('✅ Copied!\n\nOpen Notes or Mail, paste it there, and save it somewhere safe.');};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(json).then(done).catch(()=>{ta.select();alert('The backup text is in the box. Select it all, copy it, and paste it somewhere safe.');});
+  } else { ta.select();alert('The backup text is in the box. Select it all, copy it, and paste it somewhere safe.'); }
+}
+function doImport(){
+  const raw=document.getElementById('backup-text').value.trim();
+  if(!raw){alert('Choose a backup file or paste your backup text first.');return;}
+  let parsed;
+  try{parsed=JSON.parse(raw);}catch(e){alert("That doesn't look like a backup from this app.");return;}
+  if(!parsed||typeof parsed!=='object'||(!parsed.feelings&&!parsed.bp&&!parsed.meds)){alert("That doesn't look like a backup from this app.");return;}
+  const nDays=Object.keys(parsed.feelings||{}).length;
+  if(!confirm(`Restore this backup (${nDays} logged day${nDays===1?'':'s'})?\n\nThis replaces what is on this phone now.`))return;
+  // Safety net: keep the current data under another key so a mistaken restore can be undone by support
+  try{localStorage.setItem('mhj_before_restore',JSON.stringify({when:new Date().toISOString(),feelings:data,bp:bpData,meds:medData,settings}));}catch(e){}
+  data=parsed.feelings||{};bpData=parsed.bp||{};medData=parsed.meds||{meds:[],checks:{}};
+  settings=Object.assign({},parsed.settings||{});
+  migrate();
+  saveData();saveBP();saveMeds();saveSettings();
+  closeBackup();renderCalendar();checkReminders();renderInfoBanners();
+  alert('✅ Data restored!');
+}
+function confirmClear(){
+  if(!confirm('Are you sure you want to clear ALL data?\n\nThis cannot be undone.'))return;
+  if(!confirm('Last chance — this will delete everything. Are you absolutely sure?'))return;
+  data={};bpData={};medData={meds:[],checks:{}};settings={};
+  saveData();saveBP();saveMeds();saveSettings();
+  closeBackup();renderCalendar();checkReminders();renderInfoBanners();
+  alert('All data cleared.');
+}
+document.getElementById('backup-file').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{document.getElementById('backup-text').value=String(r.result||'');};
+  r.readAsText(f);
+});
+
+// ═══════════════════════════════════════════════════
+//  GENTLE INFO BANNERS (install hint, backup nudge)
+// ═══════════════════════════════════════════════════
+function isStandalone(){ return !!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)); }
+function renderInfoBanners(){
+  const box=document.getElementById('info-banners');
+  if(!box) return;
+  box.innerHTML='';
+  const add=(html,buttons)=>{
+    const b=document.createElement('div');b.className='banner soft';
+    const m=document.createElement('div');m.innerHTML=html;b.appendChild(m);
+    const row=document.createElement('div');row.className='brow';
+    buttons.forEach(([label,fn,alt])=>{const x=document.createElement('button');x.textContent=label;if(alt)x.className='alt';x.onclick=fn;row.appendChild(x);});
+    b.appendChild(row);box.appendChild(b);
+  };
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isIOS&&!isStandalone()&&!settings.installHintDismissed){
+    add('📱 <strong>To use this like an app:</strong> tap the <strong>Share</strong> button (square with an arrow) at the bottom of Safari, then <strong>Add to Home Screen</strong>.',
+      [['Got it',()=>{settings.installHintDismissed=true;saveSettings();renderInfoBanners();},true]]);
+  }
+  const hasData=Object.keys(data).length>0||Object.keys(bpData).length>0;
+  const last=settings.lastBackup?new Date(settings.lastBackup).getTime():0;
+  const stale=Date.now()-last>14*86400000;
+  const snoozed=settings.backupSnooze&&Date.now()<settings.backupSnooze;
+  if(hasData&&stale&&!snoozed){
+    add(last?'💾 It\'s been a while since your last backup.':'💾 You haven\'t backed up your entries yet. A backup protects them if the phone is lost or reset.',
+      [['Back up now',openBackup],['Later',()=>{settings.backupSnooze=Date.now()+3*86400000;saveSettings();renderInfoBanners();},true]]);
+  }
+}
+
+// ── INIT ──
+(function(){
+  const bn=document.getElementById('banners');
+  const r=document.createElement('div');r.id='rem-banners';
+  const i=document.createElement('div');i.id='info-banners';
+  bn.appendChild(r);bn.appendChild(i);
+})();
+refreshMedTimesUI();
+renderCalendar();
+renderInfoBanners();
+checkReminders();
+setInterval(checkReminders,60000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkReminders(); });
+
+// Ask the browser to keep this site's saved data (less likely to be cleaned up)
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+// Offline support
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
